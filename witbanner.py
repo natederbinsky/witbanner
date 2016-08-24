@@ -449,7 +449,9 @@ def main(argv):
 	# print(banner_sectiontermset(sid, "201710"))
 	# print(banner_coursesearch(sid, "201710", ["COMP", "MATH"]))
 
-	comp1000emails(sid)
+	sid = comp1000emails(sid)
+
+	print(sid)
 
 	# good,r,sid = banner_get("/SSBPROD/bwskfcls.P_GetCrse", sid)
 	# if good:
