@@ -14,20 +14,34 @@ from bs4 import BeautifulSoup
 ##############################################################################
 
 _BASE_URL = "https://prodweb2.wit.edu"
+_SID = None
 
-def _banner_call(endpoint, method, sessid, params):
-	r = getattr(requests,method)(urlparse.urljoin(_BASE_URL, endpoint), cookies={"SESSID":sessid}, data=params)
-	# print(r.text)
+def _banner_call(endpoint, method, params):
+	global _SID
+	if _SID is None:
+		return False, None
+
+	r = getattr(requests,method)(urlparse.urljoin(_BASE_URL, endpoint), cookies={"SESSID":_SID}, data=params)
 	if "SESSID" in r.cookies:
-		return True, r, r.cookies["SESSID"]
+		_SID = r.cookies["SESSID"]
+		return True, r
 	else:
-		return False, r, None
+		_SID = None
+		return False, r
 
-def banner_get(endpoint, sessid, params={}):
-	return _banner_call(endpoint, "get", sessid, params)
+def banner_get(endpoint, params={}):
+	return _banner_call(endpoint, "get", params)
 
-def banner_post(endpoint, sessid, params={}):
-	return _banner_call(endpoint, "post", sessid, params)
+def banner_post(endpoint, params={}):
+	return _banner_call(endpoint, "post", params)
+
+def banner_init(sid):
+	global _SID
+	_SID = sid
+
+def banner_lastid():
+	global _SID
+	return _SID
 
 ##############################################################################
 ##############################################################################
@@ -104,7 +118,6 @@ def parse_detailclasslist(html):
 	for row in infotable.find_all("tr")[1:]:
 		if rowstate is 1:
 			fields = row.find_all("td")
-			print(fields)
 			info["wid"] = str(fields[2].string)
 			info["name_lastfirst"] = str(fields[1].a.string)
 			info["email"] = str(fields[5].span.a["href"].split(":")[1])
@@ -203,79 +216,79 @@ def parse_sectionlist(html):
 ##############################################################################
 ##############################################################################
 
-def banner_mainmenu(sid):
-	good,r,sid = banner_get("/SSBPROD/twbkwbis.P_GenMenu?name=bmenu.P_MainMnu", sid)
+def banner_mainmenu():
+	good,r = banner_get("/SSBPROD/twbkwbis.P_GenMenu?name=bmenu.P_MainMnu")
 	if good:
-		return parse_menu(r.text),sid
+		return parse_menu(r.text)
 	else:
-		return None,None
+		return None
 
-def banner_facultymenu(sid):
-	good,r,sid = banner_get("/SSBPROD/twbkwbis.P_GenMenu?name=bmenu.P_FacMainMnu", sid)
+def banner_facultymenu():
+	good,r = banner_get("/SSBPROD/twbkwbis.P_GenMenu?name=bmenu.P_FacMainMnu")
 	if good:
-		return parse_menu(r.text),sid
+		return parse_menu(r.text)
 	else:
-		return None,None
+		return None
 
-def banner_termform(sid):
-	good,r,sid = banner_get("/SSBPROD/bwlkostm.P_FacSelTerm", sid)
+def banner_termform():
+	good,r = banner_get("/SSBPROD/bwlkostm.P_FacSelTerm")
 	if good:
-		return parse_form(r.text),sid
+		return parse_form(r.text)
 	else:
-		return None,None
+		return None
 
-def banner_termset(sid, term):
-	good,r,sid = banner_post("/SSBPROD/bwlkostm.P_FacStoreTerm", sid, {"term":term, "name1":"bmenu.P_FacMainMnu"})
+def banner_termset(term):
+	good,r = banner_post("/SSBPROD/bwlkostm.P_FacStoreTerm", {"term":term, "name1":"bmenu.P_FacMainMnu"})
 	if good:
-		return term,sid
+		return term
 	else:
-		return None,None
+		return None
 
-def banner_crnform(sid):
-	good,r,sid = banner_get("/SSBPROD/bwlkocrn.P_FacCrnSel", sid)
+def banner_crnform():
+	good,r = banner_get("/SSBPROD/bwlkocrn.P_FacCrnSel")
 	if good:
-		return parse_form(r.text),sid
+		return parse_form(r.text)
 	else:
-		return None,None
+		return None
 
-def banner_crnset(sid, crn):
+def banner_crnset(crn):
 	# unsure if calling_proc should be P_FACENTERCRN or P_FACCRNSEL, but I'm guessing the former is more flexible
-	good,r,sid = banner_post("/SSBPROD/bwlkocrn.P_FacStoreCRN", sid, {"crn":crn, "name1":"bmenu.P_FacMainMnu", "calling_proc_name":"P_FACENTERCRN"})
+	good,r = banner_post("/SSBPROD/bwlkocrn.P_FacStoreCRN", {"crn":crn, "name1":"bmenu.P_FacMainMnu", "calling_proc_name":"P_FACENTERCRN"})
 	if good:
-		return crn,sid
+		return crn
 	else:
-		return None,None
+		return None
 
-def banner_summaryclasslist(sid):
-	good,r,sid = banner_get("/SSBPROD/bwlkfcwl.P_FacClaListSum", sid)
+def banner_summaryclasslist():
+	good,r = banner_get("/SSBPROD/bwlkfcwl.P_FacClaListSum")
 	if good:
-		return parse_summaryclasslist(r.text),sid
+		return parse_summaryclasslist(r.text)
 	else:
-		return None,None
+		return None
 
-def banner_detailclasslist(sid):
-	good,r,sid = banner_get("/SSBPROD/bwlkfcwl.P_FacClaList", sid)
+def banner_detailclasslist():
+	good,r = banner_get("/SSBPROD/bwlkfcwl.P_FacClaList")
 	if good:
-		return parse_detailclasslist(r.text),sid
+		return parse_detailclasslist(r.text)
 	else:
-		return None,None
+		return None
 
-def banner_sectiontermform(sid):
-	good,r,sid = banner_get("/SSBPROD/bwskfcls.p_sel_crse_search", sid)
+def banner_sectiontermform():
+	good,r = banner_get("/SSBPROD/bwskfcls.p_sel_crse_search")
 	if good:
-		return parse_form(r.text),sid
+		return parse_form(r.text)
 	else:
-		return None,None
+		return None
 
 # not sure if this is ever going to be useful... (just sets the term_in in searches)
-def banner_sectiontermset(sid, term):
-	good,r,sid = banner_post("/SSBPROD/bwckgens.p_proc_term_date", sid, {"p_term":term, "p_calling_proc":"P_CrseSearch"})
+def banner_sectiontermset(term):
+	good,r = banner_post("/SSBPROD/bwckgens.p_proc_term_date", {"p_term":term, "p_calling_proc":"P_CrseSearch"})
 	if good:
-		return term,sid
+		return term
 	else:
-		return None,None
+		return None
 
-def banner_coursesearch(sid, term, subjects):
+def banner_coursesearch(term, subjects):
 	params = [
 		("sel_subj","dummy"),
 		("path","1"),
@@ -308,13 +321,13 @@ def banner_coursesearch(sid, term, subjects):
 	for subj in subjects:
 		params.append(("sel_subj", subj))
 
-	good,r,sid = banner_post("/SSBPROD/bwskfcls.P_GetCrse", sid, params)
+	good,r = banner_post("/SSBPROD/bwskfcls.P_GetCrse", params)
 	if good:
-		return parse_courselist(r.text),sid
+		return parse_courselist(r.text)
 	else:
-		return None,None
+		return None
 
-def banner_sectioncodes(sid, term):
+def banner_sectioncodes(term):
 	params = [
 		("sel_subj","dummy"),
 		("path","1"),
@@ -345,13 +358,13 @@ def banner_sectioncodes(sid, term):
 
 	params.append(("term_in",term))
 
-	good,r,sid = banner_post("/SSBPROD/bwskfcls.P_GetCrse", sid, params)
+	good,r = banner_post("/SSBPROD/bwskfcls.P_GetCrse", params)
 	if good:
-		return parse_searchform(r.text),sid
+		return parse_searchform(r.text)
 	else:
-		return None,None
+		return None
 
-def banner_sectionsearch(sid, term, subjects, num="", title="", schedules=["%"], cred_from="", cred_to="", levels=["%"], partsofterm=["%"], instructors=["%"], attrs=["%"], beginh="0", beginm="0", beginap="a", endh="0", endm="0", endap="a", days=[]):
+def banner_sectionsearch(term, subjects, num="", title="", schedules=["%"], cred_from="", cred_to="", levels=["%"], partsofterm=["%"], instructors=["%"], attrs=["%"], beginh="0", beginm="0", beginap="a", endh="0", endm="0", endap="a", days=[]):
 	params = [
 		("rsts","dummy"),
 		("crn","dummy"),
@@ -395,63 +408,65 @@ def banner_sectionsearch(sid, term, subjects, num="", title="", schedules=["%"],
 		for s in source:
 			params.append((key, s))
 
-	good,r,sid = banner_post("/SSBPROD/bwskfcls.P_GetCrse_Advanced", sid, params)
+	good,r = banner_post("/SSBPROD/bwskfcls.P_GetCrse_Advanced", params)
 	if good:
-		return parse_sectionlist(r.text),sid
+		return parse_sectionlist(r.text)
 	else:
-		return None,None
+		return None
 
 ##############################################################################
 ##############################################################################
 
-def comp1000emails(sid):
-	codes,sid = banner_sectioncodes(sid, "201710")
-	profs = {name:code for code,name in codes["instructors"].items()}
+def comp1000emails(instructors=None):
+	codes = banner_sectioncodes("201710")
 	schedules = {name:code for code,name in codes["schedules"].items()}
 
-	term,sid = banner_termset(sid, "201710")
-	sections,sid = banner_sectionsearch(sid, "201710", ["COMP"], num="1000", schedules=[schedules['Lecture']])
+	params = {"term":"201710", "subjects":["COMP"], "num":"1000", "schedules":[schedules['Lecture']]}
+	if instructors is not None:
+		profs = {name:code for code,name in codes["instructors"].items()}
+		params["instructors"] = [profs[p] for p in instructors]
+
+	term = banner_termset("201710")
+	sections = banner_sectionsearch(**params)
 	if sections is not None:
 		emails = []
 		comp1000 = [s["crn"] for s in sections]
 		for s in comp1000:
 			print("Querying {}...".format(s))
-			crn,sid = banner_crnset(sid, s)
+			crn = banner_crnset(s)
 			if crn is not None:
 				print(" Getting students")
-				students,sid = banner_summaryclasslist(sid)
+				students = banner_summaryclasslist()
 				if students is not None:
 					print(" Grabbing e-mails")
 					for student in students:
 						emails.append(student["email"])
-
 	print(emails)
 	print(len(emails))
-
-	return sid
 
 def main(argv):
 	if len(argv) is not 2:
 		print("{} <initial session id>".format(argv[0]))
 
-	sid = argv[1]
+	banner_init(argv[1])
 
-	# print(banner_mainmenu(sid))
-	# print(banner_facultymenu(sid))
-	# print(banner_termform(sid))
-	# print(banner_termset(sid, "201710"))
-	# print(banner_crnform(sid))
-	# print(banner_crnset(sid, "11588"))
-	# print(banner_summaryclasslist(sid))
-	# print(banner_detailclasslist(sid))
+	# print(banner_mainmenu())
+	# print(banner_facultymenu())
+	# print(banner_termform())
+	# print(banner_termset("201710"))
+	# print(banner_crnform())
+	# print(banner_crnset("11588"))
+	# print(banner_summaryclasslist())
+	# print(banner_detailclasslist())
 
-	# print(banner_sectiontermform(sid))
-	# print(banner_sectiontermset(sid, "201710"))
-	# print(banner_coursesearch(sid, "201710", ["COMP", "MATH"]))
+	# print(banner_sectiontermform())
+	# print(banner_sectiontermset("201710"))
+	# print(banner_coursesearch("201710", ["COMP", "MATH"]))
 
-	sid = comp1000emails(sid)
+	# comp1000emails()
+	# comp1000emails(["Derbinsky, Nathaniel"])
 
-	print(sid)
+	print(banner_lastid())
 
 	# good,r,sid = banner_get("/SSBPROD/bwskfcls.P_GetCrse", sid)
 	# if good:
