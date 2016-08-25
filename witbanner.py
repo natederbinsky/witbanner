@@ -522,6 +522,19 @@ def banner_getxyz_name(term, first="", last="", stype="All"):
 	else:
 		return None
 
+def banner_idset(xyz):
+	params = {
+		"term_in":"",
+		"sname":"bmenu.P_FacStuMnu",
+		"xyz":xyz,
+	}
+
+	good,r = banner_post("/SSBPROD/bwlkoids.P_FacStoreID", params)
+	if good:
+		return xyz
+	else:
+		return None
+
 ##############################################################################
 ##############################################################################
 
@@ -580,22 +593,20 @@ def main(argv):
 	# print(banner_getxyz_wid("201710", "W00330364"))
 	# print(banner_getxyz_wid("201710", "123"))
 
-	print(banner_getxyz_name("201710", last="%pete%"))
-	print(banner_getxyz_name("201710", last="xyz"))
-	print(banner_getxyz_name("201710", last="%"))
+	# print(banner_getxyz_name("201710", last="%pete%"))
+	# print(banner_getxyz_name("201710", last="xyz"))
+	# print(banner_getxyz_name("201710", last="%"))
+
+	xyz = banner_getxyz_name("201710", last="ricco").keys()[0]
+	print(banner_idset(xyz))
 
 	# params = {
-	# 	"TERM":"201710",
-	# 	"CALLING_PROC_NAME":"",
-	# 	"CALLING_PROC_NAME2":"",
 	# 	"term_in":"",
-	# 	"STUD_ID":"",
-	# 	"last_name":"%pete%", # %
-	# 	"first_name":"", # %
-	# 	"search_type":"All", # Stu, Adv, Both, All
+	# 	"sname":"bmenu.P_FacStuMnu",
+	# 	"xyz":xyz,
 	# }
 	#
-	# good,r = banner_post("/SSBPROD/bwlkoids.P_FacVerifyID", params)
+	# good,r = banner_post("/SSBPROD/bwlkoids.P_FacStoreID", params)
 	# if good:
 	# 	print(r.text)
 	# else:
