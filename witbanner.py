@@ -10,6 +10,8 @@ import urllib
 
 from bs4 import BeautifulSoup
 
+import getpass
+
 ##############################################################################
 ##############################################################################
 
@@ -35,9 +37,38 @@ def banner_get(endpoint, params={}):
 def banner_post(endpoint, params={}):
 	return _banner_call(endpoint, "post", params)
 
-def banner_init(sid):
+def banner_init(sid=None):
 	global _SID
-	_SID = sid
+
+	if sid is None:
+		baseurl = "https://cas.wit.edu"
+		endpoint = "/cas/login?"
+		service = "https://prodweb2.wit.edu:443/ssomanager/c/SSB"
+		query_string = urllib.urlencode({"service":service})
+		url = (baseurl + endpoint + query_string)
+
+		soup = BeautifulSoup(requests.get(url).text, "html.parser")
+
+		f = soup.find("form")
+
+		action = baseurl + f["action"]
+		params = {}
+
+		for input in f.find_all("input", {"type":"hidden"}):
+			params[safestr(input["name"])] = safestr(input["value"])
+
+		params["username"] = raw_input("Login: ")
+		params["password"] = getpass.getpass("Password: ")
+
+		r = requests.post(action, data=params)
+		if "SESSID" in r.cookies:
+			sid = r.cookies["SESSID"]
+
+	if sid is None:
+		print("Initialization Error!")
+		sys.exit()
+	else:
+		_SID = sid
 
 def banner_lastid():
 	global _SID
@@ -648,10 +679,10 @@ def demo_schedlatex(wids, term):
 ##############################################################################
 
 def main(argv):
-	if len(argv) is not 2:
-		print("{} <initial session id>".format(argv[0]))
-
-	banner_init(argv[1])
+	if len(argv) is 2:
+		banner_init(argv[1])
+	else:
+		banner_init()
 
 	# print(banner_mainmenu())
 	# print(banner_facultymenu())
