@@ -213,6 +213,32 @@ def parse_sectionlist(html):
 
 	return retval
 
+def parse_adviseelisting(html):
+	retval = []
+	soup = BeautifulSoup(html, "html.parser")
+
+	maintable = soup.find("table", {"class":"datadisplaytable"})
+	for student in maintable.find_all("tr")[1:-2]:
+		fields = student.find_all("td")
+
+		info = {}
+		info["name_lastfirst"] = str(fields[0].span.a.string)
+		info["xyz"] = str(urlparse.parse_qs(urlparse.urlparse(fields[0].span.a["href"]).query)[u"xyz"][0])
+		info["wid"] = str(fields[1].contents[0]).strip()
+		info["name_firstfirst"] = str(fields[1].a["target"])
+		info["email"] = str(fields[1].a["href"].split(":")[1])
+
+		pin = fields[3].string.strip()
+		if len(pin) is not 0:
+			info["pin"] = str(pin)
+
+		info["img"] = str(fields[9].img["src"])
+
+		retval.append(info)
+
+	print(len(retval))
+	return retval
+
 ##############################################################################
 ##############################################################################
 
@@ -414,6 +440,13 @@ def banner_sectionsearch(term, subjects, num="", title="", schedules=["%"], cred
 	else:
 		return None
 
+def banner_adviseelisting():
+	good,r = banner_get("/SSBPROD/bwlkadvr.P_DispAdvisees")
+	if good:
+		return parse_adviseelisting(r.text)
+	else:
+		return None
+
 ##############################################################################
 ##############################################################################
 
@@ -466,14 +499,16 @@ def main(argv):
 	# comp1000emails()
 	# comp1000emails(["Derbinsky, Nathaniel"])
 
-	print(banner_lastid())
+	print(banner_termset("201710"))
+	print(banner_adviseelisting())
 
-	# good,r,sid = banner_get("/SSBPROD/bwskfcls.P_GetCrse", sid)
+	# good,r = banner_get("/SSBPROD/bwlkadvr.P_DispAdvisees")
 	# if good:
 	# 	print(r.text)
-	# 	print(sid)
 	# else:
 	# 	print("sadness :(")
+
+	print(banner_lastid())
 
 if __name__ == "__main__":
 	main(sys.argv)
