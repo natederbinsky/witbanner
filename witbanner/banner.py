@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 from __future__ import print_function
 
 import sys
@@ -18,7 +16,7 @@ import getpass
 _BASE_URL = "https://prodweb2.wit.edu"
 _SID = None
 
-def _banner_call(endpoint, method, params):
+def _call(endpoint, method, params):
 	global _SID
 	if _SID is None:
 		return False, None
@@ -31,13 +29,13 @@ def _banner_call(endpoint, method, params):
 		_SID = None
 		return False, r
 
-def banner_get(endpoint, params={}):
-	return _banner_call(endpoint, "get", params)
+def _get(endpoint, params={}):
+	return _call(endpoint, "get", params)
 
-def banner_post(endpoint, params={}):
-	return _banner_call(endpoint, "post", params)
+def _post(endpoint, params={}):
+	return _call(endpoint, "post", params)
 
-def banner_init(sid=None):
+def init(sid=None):
 	global _SID
 
 	if sid is None:
@@ -70,7 +68,7 @@ def banner_init(sid=None):
 	else:
 		_SID = sid
 
-def banner_lastid():
+def lastid():
 	global _SID
 	return _SID
 
@@ -93,13 +91,13 @@ def _getstring(tag):
 	firstline = safestr(tag).splitlines()[0]
 	return firstline[firstline.find(">")+1:].strip()
 
-def parse_select(select):
+def _parse_select(select):
 	return {safestr(option["value"]):_getstring(option) for option in select.find_all("option")}
 
 ##############################################################################
 ##############################################################################
 
-def parse_menu(html):
+def _parse_menu(html):
 	retval = { "links":{} }
 	soup = BeautifulSoup(html, "html.parser")
 
@@ -112,7 +110,7 @@ def parse_menu(html):
 	return retval
 
 
-def parse_form(html):
+def _parse_form(html):
 	retval = { "params":{} }
 	soup = BeautifulSoup(html, "html.parser")
 
@@ -123,7 +121,7 @@ def parse_form(html):
 	retval["action"] = safestr(form["action"])
 
 	for select in form.find_all("select"):
-		retval["params"][safestr(select["name"])] = parse_select(select)
+		retval["params"][safestr(select["name"])] = _parse_select(select)
 
 	for hidden in form.find_all("input", {"type":"hidden"}):
 		retval["params"][safestr(hidden["name"])] = safestr(hidden["value"])
@@ -131,7 +129,7 @@ def parse_form(html):
 	return retval
 
 
-def parse_summaryclasslist(html):
+def _parse_summaryclasslist(html):
 	retval = []
 	soup = BeautifulSoup(html, "html.parser")
 
@@ -152,7 +150,7 @@ def parse_summaryclasslist(html):
 	return retval
 
 
-def parse_detailclasslist(html):
+def _parse_detailclasslist(html):
 	retval = []
 	soup = BeautifulSoup(html, "html.parser")
 
@@ -188,7 +186,7 @@ def parse_detailclasslist(html):
 	return retval
 
 
-def parse_courselist(html):
+def _parse_courselist(html):
 	retval = []
 	soup = BeautifulSoup(html, "html.parser")
 
@@ -203,7 +201,7 @@ def parse_courselist(html):
 	return retval
 
 
-def parse_searchform(html):
+def _parse_searchform(html):
 	soup = BeautifulSoup(html, "html.parser")
 	selects = {
 		"sel_subj":"subjects",
@@ -213,10 +211,10 @@ def parse_searchform(html):
 		"sel_instr":"instructors",
 	}
 
-	return {key:parse_select(soup.find("select", {"name":name})) for name,key in selects.items()}
+	return {key:_parse_select(soup.find("select", {"name":name})) for name,key in selects.items()}
 
 
-def parse_sectionlist(html):
+def _parse_sectionlist(html):
 	retval = []
 	soup = BeautifulSoup(html, "html.parser")
 
@@ -260,7 +258,7 @@ def parse_sectionlist(html):
 	return retval
 
 
-def parse_adviseelisting(html):
+def _parse_adviseelisting(html):
 	retval = []
 	soup = BeautifulSoup(html, "html.parser")
 
@@ -270,7 +268,7 @@ def parse_adviseelisting(html):
 
 		info = {}
 		info["name_lastfirst"] = safestr(fields[0].span.a.string)
-		info["xyz"] = safestr(urlparse.parse_qs(urlparse.urlparse(fields[0].span.a["href"]).query)[u"xyz"][0])
+		info["xyz"] = safestr(urlparse._parse_qs(urlparse.urlparse(fields[0].span.a["href"]).query)[u"xyz"][0])
 		info["wid"] = safestr(fields[1].contents[0]).strip()
 		info["name_firstfirst"] = safestr(fields[1].a["target"])
 		info["email"] = safestr(fields[1].a["href"].split(":")[1])
@@ -286,7 +284,7 @@ def parse_adviseelisting(html):
 	return retval
 
 
-def parse_verifyxyz(html):
+def _parse_verifyxyz(html):
 	soup = BeautifulSoup(html, "html.parser")
 
 	result = soup.find_all("form")[1].find("input", {"name":"xyz"})
@@ -296,7 +294,7 @@ def parse_verifyxyz(html):
 		return safestr(result["value"])
 
 # many options crashes bs4 due to bad option html
-def parse_choosexyz(html):
+def _parse_choosexyz(html):
 	retval = {}
 	for opt in [safestr(line) for line in html.splitlines() if line.find("<OPTION VALUE=") is 0]:
 		xyz = opt.split("\"")[1]
@@ -309,7 +307,7 @@ def parse_choosexyz(html):
 	else:
 		return retval
 
-def parse_studentschedule(html):
+def _parse_studentschedule(html):
 	retval = {}
 
 	# for now...
@@ -320,79 +318,79 @@ def parse_studentschedule(html):
 ##############################################################################
 ##############################################################################
 
-def banner_mainmenu():
-	good,r = banner_get("/SSBPROD/twbkwbis.P_GenMenu?name=bmenu.P_MainMnu")
+def mainmenu():
+	good,r = _get("/SSBPROD/twbkwbis.P_GenMenu?name=bmenu.P_MainMnu")
 	if good:
-		return parse_menu(r.text)
+		return _parse_menu(r.text)
 	else:
 		return None
 
-def banner_facultymenu():
-	good,r = banner_get("/SSBPROD/twbkwbis.P_GenMenu?name=bmenu.P_FacMainMnu")
+def facultymenu():
+	good,r = _get("/SSBPROD/twbkwbis.P_GenMenu?name=bmenu.P_FacMainMnu")
 	if good:
-		return parse_menu(r.text)
+		return _parse_menu(r.text)
 	else:
 		return None
 
-def banner_termform():
-	good,r = banner_get("/SSBPROD/bwlkostm.P_FacSelTerm")
+def termform():
+	good,r = _get("/SSBPROD/bwlkostm.P_FacSelTerm")
 	if good:
-		return parse_form(r.text)
+		return _parse_form(r.text)
 	else:
 		return None
 
-def banner_termset(term):
-	good,r = banner_post("/SSBPROD/bwlkostm.P_FacStoreTerm", {"term":term, "name1":"bmenu.P_FacMainMnu"})
+def termset(term):
+	good,r = _post("/SSBPROD/bwlkostm.P_FacStoreTerm", {"term":term, "name1":"bmenu.P_FacMainMnu"})
 	if good:
 		return term
 	else:
 		return None
 
-def banner_crnform():
-	good,r = banner_get("/SSBPROD/bwlkocrn.P_FacCrnSel")
+def crnform():
+	good,r = _get("/SSBPROD/bwlkocrn.P_FacCrnSel")
 	if good:
-		return parse_form(r.text)
+		return _parse_form(r.text)
 	else:
 		return None
 
-def banner_crnset(crn):
+def crnset(crn):
 	# unsure if calling_proc should be P_FACENTERCRN or P_FACCRNSEL, but I'm guessing the former is more flexible
-	good,r = banner_post("/SSBPROD/bwlkocrn.P_FacStoreCRN", {"crn":crn, "name1":"bmenu.P_FacMainMnu", "calling_proc_name":"P_FACENTERCRN"})
+	good,r = _post("/SSBPROD/bwlkocrn.P_FacStoreCRN", {"crn":crn, "name1":"bmenu.P_FacMainMnu", "calling_proc_name":"P_FACENTERCRN"})
 	if good:
 		return crn
 	else:
 		return None
 
-def banner_summaryclasslist():
-	good,r = banner_get("/SSBPROD/bwlkfcwl.P_FacClaListSum")
+def summaryclasslist():
+	good,r = _get("/SSBPROD/bwlkfcwl.P_FacClaListSum")
 	if good:
-		return parse_summaryclasslist(r.text)
+		return _parse_summaryclasslist(r.text)
 	else:
 		return None
 
-def banner_detailclasslist():
-	good,r = banner_get("/SSBPROD/bwlkfcwl.P_FacClaList")
+def detailclasslist():
+	good,r = _get("/SSBPROD/bwlkfcwl.P_FacClaList")
 	if good:
-		return parse_detailclasslist(r.text)
+		return _parse_detailclasslist(r.text)
 	else:
 		return None
 
-def banner_sectiontermform():
-	good,r = banner_get("/SSBPROD/bwskfcls.p_sel_crse_search")
+def sectiontermform():
+	good,r = _get("/SSBPROD/bwskfcls.p_sel_crse_search")
 	if good:
-		return parse_form(r.text)
+		return _parse_form(r.text)
 	else:
 		return None
 
 # not sure if this is ever going to be useful... (just sets the term_in in searches)
-def banner_sectiontermset(term):
-	good,r = banner_post("/SSBPROD/bwckgens.p_proc_term_date", {"p_term":term, "p_calling_proc":"P_CrseSearch"})
+def sectiontermset(term):
+	good,r = _post("/SSBPROD/bwckgens.p_proc_term_date", {"p_term":term, "p_calling_proc":"P_CrseSearch"})
 	if good:
 		return term
 	else:
 		return None
 
-def banner_coursesearch(term, subjects):
+def coursesearch(term, subjects):
 	params = [
 		("sel_subj","dummy"),
 		("path","1"),
@@ -425,13 +423,13 @@ def banner_coursesearch(term, subjects):
 	for subj in subjects:
 		params.append(("sel_subj", subj))
 
-	good,r = banner_post("/SSBPROD/bwskfcls.P_GetCrse", params)
+	good,r = _post("/SSBPROD/bwskfcls.P_GetCrse", params)
 	if good:
-		return parse_courselist(r.text)
+		return _parse_courselist(r.text)
 	else:
 		return None
 
-def banner_sectioncodes(term):
+def sectioncodes(term):
 	params = [
 		("sel_subj","dummy"),
 		("path","1"),
@@ -462,13 +460,13 @@ def banner_sectioncodes(term):
 
 	params.append(("term_in",term))
 
-	good,r = banner_post("/SSBPROD/bwskfcls.P_GetCrse", params)
+	good,r = _post("/SSBPROD/bwskfcls.P_GetCrse", params)
 	if good:
-		return parse_searchform(r.text)
+		return _parse_searchform(r.text)
 	else:
 		return None
 
-def banner_sectionsearch(term, subjects, num="", title="", schedules=["%"], cred_from="", cred_to="", levels=["%"], partsofterm=["%"], instructors=["%"], attrs=["%"], beginh="0", beginm="0", beginap="a", endh="0", endm="0", endap="a", days=[]):
+def sectionsearch(term, subjects, num="", title="", schedules=["%"], cred_from="", cred_to="", levels=["%"], partsofterm=["%"], instructors=["%"], attrs=["%"], beginh="0", beginm="0", beginap="a", endh="0", endm="0", endap="a", days=[]):
 	params = [
 		("rsts","dummy"),
 		("crn","dummy"),
@@ -512,20 +510,20 @@ def banner_sectionsearch(term, subjects, num="", title="", schedules=["%"], cred
 		for s in source:
 			params.append((key, s))
 
-	good,r = banner_post("/SSBPROD/bwskfcls.P_GetCrse_Advanced", params)
+	good,r = _post("/SSBPROD/bwskfcls.P_GetCrse_Advanced", params)
 	if good:
-		return parse_sectionlist(r.text)
+		return _parse_sectionlist(r.text)
 	else:
 		return None
 
-def banner_adviseelisting():
-	good,r = banner_get("/SSBPROD/bwlkadvr.P_DispAdvisees")
+def adviseelisting():
+	good,r = _get("/SSBPROD/bwlkadvr.P_DispAdvisees")
 	if good:
-		return parse_adviseelisting(r.text)
+		return _parse_adviseelisting(r.text)
 	else:
 		return None
 
-def banner_getxyz_wid(term, wid):
+def getxyz_wid(term, wid):
 	params = {
 		"TERM":term,
 		"CALLING_PROC_NAME":"",
@@ -537,13 +535,13 @@ def banner_getxyz_wid(term, wid):
 		"search_type":"All", # Stu, Adv, Both, All
 	}
 
-	good,r = banner_post("/SSBPROD/bwlkoids.P_FacVerifyID", params)
+	good,r = _post("/SSBPROD/bwlkoids.P_FacVerifyID", params)
 	if good:
-		return parse_verifyxyz(r.text)
+		return _parse_verifyxyz(r.text)
 	else:
 		return None
 
-def banner_getxyz_name(term, first="", last="", stype="All"):
+def getxyz_name(term, first="", last="", stype="All"):
 	params = {
 		"TERM":term,
 		"CALLING_PROC_NAME":"",
@@ -555,170 +553,28 @@ def banner_getxyz_name(term, first="", last="", stype="All"):
 		"search_type":stype, # Stu, Adv, Both, All
 	}
 
-	good,r = banner_post("/SSBPROD/bwlkoids.P_FacVerifyID", params)
+	good,r = _post("/SSBPROD/bwlkoids.P_FacVerifyID", params)
 	if good:
-		return parse_choosexyz(r.text)
+		return _parse_choosexyz(r.text)
 	else:
 		return None
 
-def banner_idset(xyz):
+def idset(xyz):
 	params = {
 		"term_in":"",
 		"sname":"bmenu.P_FacStuMnu",
 		"xyz":xyz,
 	}
 
-	good,r = banner_post("/SSBPROD/bwlkoids.P_FacStoreID", params)
+	good,r = _post("/SSBPROD/bwlkoids.P_FacStoreID", params)
 	if good:
 		return xyz
 	else:
 		return None
 
-def banner_studentschedule():
-	good,r = banner_get("/SSBPROD/bwlkfstu.P_FacStuSchd")
+def studentschedule():
+	good,r = _get("/SSBPROD/bwlkfstu.P_FacStuSchd")
 	if good:
-		return parse_studentschedule(r.text)
+		return _parse_studentschedule(r.text)
 	else:
 		return None
-
-##############################################################################
-##############################################################################
-
-def demo_comp1000emails(instructors=None):
-	codes = banner_sectioncodes("201710")
-	schedules = {name:code for code,name in codes["schedules"].items()}
-
-	params = {"term":"201710", "subjects":["COMP"], "num":"1000", "schedules":[schedules['Lecture']]}
-	if instructors is not None:
-		profs = {name:code for code,name in codes["instructors"].items()}
-		params["instructors"] = [profs[p] for p in instructors]
-
-	term = banner_termset("201710")
-	sections = banner_sectionsearch(**params)
-	if sections is not None:
-		emails = []
-		comp1000 = [s["crn"] for s in sections]
-		for s in comp1000:
-			print("Querying {}...".format(s))
-			crn = banner_crnset(s)
-			if crn is not None:
-				print(" Getting students")
-				students = banner_summaryclasslist()
-				if students is not None:
-					print(" Grabbing e-mails")
-					for student in students:
-						emails.append(student["email"])
-	print(emails)
-	print(len(emails))
-
-def _demo_schedlatex_parse(source):
-	ret = []
-
-	soup = BeautifulSoup(source, "lxml")
-	div = soup.findAll('div',attrs={'class':'pagebodydiv'})[0]
-	tables = div.findAll('table', attrs={'class':'datadisplaytable'})
-
-	first = True
-	classId = None
-	for table in tables:
-		if first:
-			caption = table.findAll('caption')[0]
-			classId = caption.string.split(' - ')[1].strip().replace(' ', '')
-			first = False
-		else:
-			row = table.findAll('tr')[1]
-			cols = row.findAll('td')
-			time = [{"hour":int(t[0][0]), "min":int(t[0][1]), "am":t[1]=="am"} for t in [[t[0].split(":"), t[1]] for t in [t.split() for t in cols[1].string.split(' - ')]]]
-			days = cols[2].string
-
-			for day in days:
-				ret.append({"day":str(day), "time":{"from":time[0], "to":time[1]}, "class":str(classId)})
-			first = True
-
-	return ret
-
-def _demo_schedlatex_schedule(events, t="class"):
-	for event in events:
-		day = event["day"].lower() if event["day"]!="R" else "h"
-		title = event["class"]
-		slotbottom = "todo"
-		numslots = "todo"
-
-		toH = event["time"]["to"]["hour"]
-		toM = event["time"]["to"]["min"]
-		toAM = event["time"]["to"]["am"]
-
-		toNum = toH + (0 if toAM else (12 if toH is not 12 else 0)) + (0.0 if toM is 0 else (0.5 if toM <= 30 else 1.0))
-
-		fromH = event["time"]["from"]["hour"]
-		fromM = event["time"]["from"]["min"]
-		fromAM = event["time"]["from"]["am"]
-
-		fromNum = fromH + (0 if fromAM else (12 if fromH is not 12 else 0)) + (0.0 if fromM < 30 else 0.5)
-
-		numslots = int((toNum-fromNum) / 0.5)
-
-		toNumSlot = toNum - 0.5
-		toRN = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII"][int(toNumSlot) - 1 - (0 if toNumSlot <= 12 else 12)]
-		toAMPM = "am" if toNumSlot < 12 else "pm"
-		toHalf = "H" if toNumSlot-int(toNumSlot) else ""
-		slotbottom = "\\tc{}{}{}".format(toRN, toAMPM, toHalf)
-
-		print("\\slot{}{{{}}}{{{}}}{{{}}}{{{}}}".format(t, day, slotbottom, "", numslots))
-
-def demo_schedlatex(wids, term):
-	banner_termset(term)
-	for student in wids:
-		xyz = banner_getxyz_wid(term, student)
-		banner_idset(xyz)
-
-		parse = _demo_schedlatex_parse(banner_studentschedule()["raw"])
-		_demo_schedlatex_schedule(parse)
-
-##############################################################################
-##############################################################################
-
-def main(argv):
-	if len(argv) is 2:
-		banner_init(argv[1])
-	else:
-		banner_init()
-
-	# print(banner_mainmenu())
-	# print(banner_facultymenu())
-	# print(banner_termform())
-	# print(banner_termset("201710"))
-	# print(banner_crnform())
-	# print(banner_crnset("11588"))
-	# print(banner_summaryclasslist())
-	# print(banner_detailclasslist())
-
-	# print(banner_sectiontermform())
-	# print(banner_sectiontermset("201710"))
-	# print(banner_coursesearch("201710", ["COMP", "MATH"]))
-
-	# demo_comp1000emails()
-	# demo_comp1000emails(["Derbinsky, Nathaniel"])
-
-	# print(banner_termset("201710"))
-	# print(banner_adviseelisting())
-
-	# print(banner_getxyz_wid("201710", "W00330364"))
-	# print(banner_getxyz_wid("201710", "123"))
-
-	# print(banner_getxyz_name("201710", last="%pete%"))
-	# print(banner_getxyz_name("201710", last="xyz"))
-	# print(banner_getxyz_name("201710", last="%"))
-
-	demo_schedlatex(("W00325547","W00320677","W00259922"), "201710")
-
-	# good,r = banner_get("/SSBPROD/bwlkfstu.P_FacStuSchd")
-	# if good:
-	# 	print(r.text)
-	# else:
-	# 	print("sadness :(")
-
-	print(banner_lastid())
-
-if __name__ == "__main__":
-	main(sys.argv)
