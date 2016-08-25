@@ -69,6 +69,7 @@ def parse_menu(html):
 
 	return retval
 
+
 def parse_form(html):
 	retval = { "params":{} }
 	soup = BeautifulSoup(html, "html.parser")
@@ -86,6 +87,7 @@ def parse_form(html):
 		retval["params"][str(hidden["name"])] = str(hidden["value"])
 
 	return retval
+
 
 def parse_summaryclasslist(html):
 	retval = []
@@ -106,6 +108,7 @@ def parse_summaryclasslist(html):
 		retval.append(info)
 
 	return retval
+
 
 def parse_detailclasslist(html):
 	retval = []
@@ -142,6 +145,7 @@ def parse_detailclasslist(html):
 
 	return retval
 
+
 def parse_courselist(html):
 	retval = []
 	soup = BeautifulSoup(html, "html.parser")
@@ -157,7 +161,6 @@ def parse_courselist(html):
 	return retval
 
 
-
 def parse_searchform(html):
 	soup = BeautifulSoup(html, "html.parser")
 	selects = {
@@ -169,6 +172,7 @@ def parse_searchform(html):
 	}
 
 	return {key:parse_select(soup.find("select", {"name":name})) for name,key in selects.items()}
+
 
 def parse_sectionlist(html):
 	retval = []
@@ -213,6 +217,7 @@ def parse_sectionlist(html):
 
 	return retval
 
+
 def parse_adviseelisting(html):
 	retval = []
 	soup = BeautifulSoup(html, "html.parser")
@@ -238,6 +243,16 @@ def parse_adviseelisting(html):
 
 	print(len(retval))
 	return retval
+
+
+def parse_verifyxyz(html):
+	soup = BeautifulSoup(html, "html.parser")
+
+	result = soup.find_all("form")[1].find("input", {"name":"xyz"})
+	if result is None:
+		return None
+	else:
+		return str(result["value"])
 
 ##############################################################################
 ##############################################################################
@@ -447,6 +462,24 @@ def banner_adviseelisting():
 	else:
 		return None
 
+def banner_getxyz_wid(wid, term):
+	params = {
+		"TERM":term,
+		"CALLING_PROC_NAME":"",
+		"CALLING_PROC_NAME2":"",
+		"term_in":"",
+		"STUD_ID":wid,
+		"last_name":"",
+		"first_name":"",
+		"search_type":"All", # Stu, Adv, Both, All
+	}
+
+	good,r = banner_post("/SSBPROD/bwlkoids.P_FacVerifyID", params)
+	if good:
+		return parse_verifyxyz(r.text)
+	else:
+		return None
+
 ##############################################################################
 ##############################################################################
 
@@ -499,10 +532,24 @@ def main(argv):
 	# comp1000emails()
 	# comp1000emails(["Derbinsky, Nathaniel"])
 
-	print(banner_termset("201710"))
-	print(banner_adviseelisting())
+	# print(banner_termset("201710"))
+	# print(banner_adviseelisting())
 
-	# good,r = banner_get("/SSBPROD/bwlkadvr.P_DispAdvisees")
+	print(banner_getxyz_wid("W00330364","201710"))
+	print(banner_getxyz_wid("123","201710"))
+
+	# params = {
+	# 	"TERM":"201710",
+	# 	"CALLING_PROC_NAME":"",
+	# 	"CALLING_PROC_NAME2":"",
+	# 	"term_in":"",
+	# 	"STUD_ID":"W00330364",
+	# 	"last_name":"",
+	# 	"first_name":"",
+	# 	"search_type":"All", # Stu, Adv, Both, All
+	# }
+	#
+	# good,r = banner_post("/SSBPROD/bwlkoids.P_FacVerifyID", params)
 	# if good:
 	# 	print(r.text)
 	# else:
