@@ -46,13 +46,24 @@ def banner_lastid():
 ##############################################################################
 ##############################################################################
 
+def safestr(s):
+	if isinstance(s,str):
+		return s
+	elif isinstance(s,unicode):
+		return s.encode('ascii','replace')
+	else:
+		return str(s)
+
+##############################################################################
+##############################################################################
+
 # necessary hack because banner doesn't properly close tags
 def _getstring(tag):
-	firstline = str(tag).splitlines()[0]
+	firstline = safestr(tag).splitlines()[0]
 	return firstline[firstline.find(">")+1:].strip()
 
 def parse_select(select):
-	return {str(option["value"]):_getstring(option) for option in select.find_all("option")}
+	return {safestr(option["value"]):_getstring(option) for option in select.find_all("option")}
 
 ##############################################################################
 ##############################################################################
@@ -61,11 +72,11 @@ def parse_menu(html):
 	retval = { "links":{} }
 	soup = BeautifulSoup(html, "html.parser")
 
-	retval["title"] = str(soup.title.string)
+	retval["title"] = safestr(soup.title.string)
 
 	maintable = soup.find("table", {"class":"menuplaintable"})
 	for link in maintable.find_all("a", {"class":"submenulinktext2"}):
-		retval["links"][str(link.string)] = str(link["href"])
+		retval["links"][safestr(link.string)] = safestr(link["href"])
 
 	return retval
 
@@ -74,17 +85,17 @@ def parse_form(html):
 	retval = { "params":{} }
 	soup = BeautifulSoup(html, "html.parser")
 
-	retval["title"] = str(soup.title.string)
+	retval["title"] = safestr(soup.title.string)
 
 	form = soup.find("div", {"class":"pagebodydiv"}).find("form")
 
-	retval["action"] = str(form["action"])
+	retval["action"] = safestr(form["action"])
 
 	for select in form.find_all("select"):
-		retval["params"][str(select["name"])] = parse_select(select)
+		retval["params"][safestr(select["name"])] = parse_select(select)
 
 	for hidden in form.find_all("input", {"type":"hidden"}):
-		retval["params"][str(hidden["name"])] = str(hidden["value"])
+		retval["params"][safestr(hidden["name"])] = safestr(hidden["value"])
 
 	return retval
 
@@ -99,11 +110,11 @@ def parse_summaryclasslist(html):
 		info = {}
 		fields = student.find_all("td")
 
-		info["wid"] = str(fields[2].span.string)
-		info["name_lastfirst"] = str(fields[1].span.a.string)
-		info["name_firstfirst"] = str(fields[9].span.a["target"])
-		info["email"] = str(fields[9].span.a["href"].split(":")[1])
-		info["img"] = str(fields[10].img["src"])
+		info["wid"] = safestr(fields[2].span.string)
+		info["name_lastfirst"] = safestr(fields[1].span.a.string)
+		info["name_firstfirst"] = safestr(fields[9].span.a["target"])
+		info["email"] = safestr(fields[9].span.a["href"].split(":")[1])
+		info["img"] = safestr(fields[10].img["src"])
 
 		retval.append(info)
 
@@ -121,9 +132,9 @@ def parse_detailclasslist(html):
 	for row in infotable.find_all("tr")[1:]:
 		if rowstate is 1:
 			fields = row.find_all("td")
-			info["wid"] = str(fields[2].string)
-			info["name_lastfirst"] = str(fields[1].a.string)
-			info["email"] = str(fields[5].span.a["href"].split(":")[1])
+			info["wid"] = safestr(fields[2].string)
+			info["name_lastfirst"] = safestr(fields[1].a.string)
+			info["email"] = safestr(fields[5].span.a["href"].split(":")[1])
 			rowstate+=1
 			continue
 		elif rowstate in [2, 3, 4]:
@@ -133,7 +144,7 @@ def parse_detailclasslist(html):
 			if row.find("th") is None:
 				rowstate+=1
 			else:
-				info[str(row.th.string.split(":")[0])] = str(row.td.string).strip()
+				info[safestr(row.th.string.split(":")[0])] = safestr(row.td.string).strip()
 		elif rowstate is 7:
 			rowstate = 1
 			retval.append(info)
@@ -152,9 +163,9 @@ def parse_courselist(html):
 
 	for course in soup.find_all("form", {"action":"/SSBPROD/bwskfcls.P_GetCrse"}):
 		info = {
-			"subj":str(course.find("input", {"name":"sel_subj", "value":lambda x: x!="dummy"})["value"]),
-			"num":str(course.find("input", {"name":"SEL_CRSE"})["value"]),
-			"title":str(course.parent.find_previous_sibling("td").string),
+			"subj":safestr(course.find("input", {"name":"sel_subj", "value":lambda x: x!="dummy"})["value"]),
+			"num":safestr(course.find("input", {"name":"SEL_CRSE"})["value"]),
+			"title":safestr(course.parent.find_previous_sibling("td").string),
 		}
 		retval.append(info)
 
@@ -196,22 +207,22 @@ def parse_sectionlist(html):
 				else:
 					if cols[1].find("a") is not None:
 						course = {}
-						course["crn"] = str(cols[1].a.string)
-						course["status"] = str(cols[0].string)
-						course["subj"] = str(cols[2].string)
-						course["num"] = str(cols[3].string)
-						course["section"] = str(cols[4].string)
-						course["credits"] = str(cols[6].string)
-						course["title"] = str(cols[7].string)
-						course["cap"] = str(cols[10].string)
-						course["active"] = str(cols[11].string)
-						course["attr"] = str(cols[16].string.strip())
-						course["instructor"] = ' '.join(str(''.join([s for s in cols[13].stripped_strings])).split())
-						course["class"] = [(str(cols[8].string),str(cols[9].string),str(cols[15].string))]
+						course["crn"] = safestr(cols[1].a.string)
+						course["status"] = safestr(cols[0].string)
+						course["subj"] = safestr(cols[2].string)
+						course["num"] = safestr(cols[3].string)
+						course["section"] = safestr(cols[4].string)
+						course["credits"] = safestr(cols[6].string)
+						course["title"] = safestr(cols[7].string)
+						course["cap"] = safestr(cols[10].string)
+						course["active"] = safestr(cols[11].string)
+						course["attr"] = safestr(cols[16].string.strip())
+						course["instructor"] = ' '.join(safestr(''.join([s for s in cols[13].stripped_strings])).split())
+						course["class"] = [(safestr(cols[8].string),safestr(cols[9].string),safestr(cols[15].string))]
 
 						retval.append(course)
 					else:
-						retval[len(retval)-1]["class"].append((str(cols[8].string),str(cols[9].string),str(cols[15].string)))
+						retval[len(retval)-1]["class"].append((safestr(cols[8].string),safestr(cols[9].string),safestr(cols[15].string)))
 
 				continue
 
@@ -227,21 +238,20 @@ def parse_adviseelisting(html):
 		fields = student.find_all("td")
 
 		info = {}
-		info["name_lastfirst"] = str(fields[0].span.a.string)
-		info["xyz"] = str(urlparse.parse_qs(urlparse.urlparse(fields[0].span.a["href"]).query)[u"xyz"][0])
-		info["wid"] = str(fields[1].contents[0]).strip()
-		info["name_firstfirst"] = str(fields[1].a["target"])
-		info["email"] = str(fields[1].a["href"].split(":")[1])
+		info["name_lastfirst"] = safestr(fields[0].span.a.string)
+		info["xyz"] = safestr(urlparse.parse_qs(urlparse.urlparse(fields[0].span.a["href"]).query)[u"xyz"][0])
+		info["wid"] = safestr(fields[1].contents[0]).strip()
+		info["name_firstfirst"] = safestr(fields[1].a["target"])
+		info["email"] = safestr(fields[1].a["href"].split(":")[1])
 
 		pin = fields[3].string.strip()
 		if len(pin) is not 0:
-			info["pin"] = str(pin)
+			info["pin"] = safestr(pin)
 
-		info["img"] = str(fields[9].img["src"])
+		info["img"] = safestr(fields[9].img["src"])
 
 		retval.append(info)
 
-	print(len(retval))
 	return retval
 
 
@@ -252,7 +262,21 @@ def parse_verifyxyz(html):
 	if result is None:
 		return None
 	else:
-		return str(result["value"])
+		return safestr(result["value"])
+
+# many options crashes bs4 due to bad option html
+def parse_choosexyz(html):
+	retval = {}
+	for opt in [safestr(line) for line in html.splitlines() if line.find("<OPTION VALUE=") is 0]:
+		xyz = opt.split("\"")[1]
+		v = opt[opt.find(">")+1:]
+		val = v[:v.rfind(" ")].strip(),v[v.rfind(" ")+1:]
+		retval[xyz] = val
+
+	if not retval:
+		return None
+	else:
+		return retval
 
 ##############################################################################
 ##############################################################################
@@ -462,7 +486,7 @@ def banner_adviseelisting():
 	else:
 		return None
 
-def banner_getxyz_wid(wid, term):
+def banner_getxyz_wid(term, wid):
 	params = {
 		"TERM":term,
 		"CALLING_PROC_NAME":"",
@@ -477,6 +501,24 @@ def banner_getxyz_wid(wid, term):
 	good,r = banner_post("/SSBPROD/bwlkoids.P_FacVerifyID", params)
 	if good:
 		return parse_verifyxyz(r.text)
+	else:
+		return None
+
+def banner_getxyz_name(term, first="", last="", stype="All"):
+	params = {
+		"TERM":term,
+		"CALLING_PROC_NAME":"",
+		"CALLING_PROC_NAME2":"",
+		"term_in":"",
+		"STUD_ID":"",
+		"last_name":last, # %
+		"first_name":first, # %
+		"search_type":stype, # Stu, Adv, Both, All
+	}
+
+	good,r = banner_post("/SSBPROD/bwlkoids.P_FacVerifyID", params)
+	if good:
+		return parse_choosexyz(r.text)
 	else:
 		return None
 
@@ -535,17 +577,21 @@ def main(argv):
 	# print(banner_termset("201710"))
 	# print(banner_adviseelisting())
 
-	print(banner_getxyz_wid("W00330364","201710"))
-	print(banner_getxyz_wid("123","201710"))
+	# print(banner_getxyz_wid("201710", "W00330364"))
+	# print(banner_getxyz_wid("201710", "123"))
+
+	print(banner_getxyz_name("201710", last="%pete%"))
+	print(banner_getxyz_name("201710", last="xyz"))
+	print(banner_getxyz_name("201710", last="%"))
 
 	# params = {
 	# 	"TERM":"201710",
 	# 	"CALLING_PROC_NAME":"",
 	# 	"CALLING_PROC_NAME2":"",
 	# 	"term_in":"",
-	# 	"STUD_ID":"W00330364",
-	# 	"last_name":"",
-	# 	"first_name":"",
+	# 	"STUD_ID":"",
+	# 	"last_name":"%pete%", # %
+	# 	"first_name":"", # %
 	# 	"search_type":"All", # Stu, Adv, Both, All
 	# }
 	#
