@@ -14,7 +14,7 @@ import sys
 def _demo_schedlatex_parse(source):
 	ret = []
 
-	soup = BeautifulSoup(source, "lxml")
+	soup = BeautifulSoup(source, "html.parser")
 	div = soup.findAll('div',attrs={'class':'pagebodydiv'})[0]
 	tables = div.findAll('table', attrs={'class':'datadisplaytable'})
 
