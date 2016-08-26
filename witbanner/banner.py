@@ -1,9 +1,13 @@
 from __future__ import print_function
 
 import sys
+from builtins import input
+
+from future.standard_library import install_aliases
+install_aliases()
+from urllib.parse import urlparse, urlencode, urljoin
 
 import requests
-import urlparse
 import urllib
 
 from bs4 import BeautifulSoup
@@ -21,7 +25,7 @@ def _call(endpoint, method, params):
 	if _SID is None:
 		return False, None
 
-	r = getattr(requests,method)(urlparse.urljoin(_BASE_URL, endpoint), cookies={"SESSID":_SID}, data=params)
+	r = getattr(requests,method)(urljoin(_BASE_URL, endpoint), cookies={"SESSID":_SID}, data=params)
 	if "SESSID" in r.cookies:
 		_SID = r.cookies["SESSID"]
 		return True, r
@@ -42,7 +46,7 @@ def init(sid=None):
 		baseurl = "https://cas.wit.edu"
 		endpoint = "/cas/login?"
 		service = "https://prodweb2.wit.edu:443/ssomanager/c/SSB"
-		query_string = urllib.urlencode({"service":service})
+		query_string = urlencode({"service":service})
 		url = (baseurl + endpoint + query_string)
 
 		soup = BeautifulSoup(requests.get(url).text, "html.parser")
@@ -52,10 +56,10 @@ def init(sid=None):
 		action = baseurl + f["action"]
 		params = {}
 
-		for input in f.find_all("input", {"type":"hidden"}):
-			params[safestr(input["name"])] = safestr(input["value"])
+		for input_field in f.find_all("input", {"type":"hidden"}):
+			params[safestr(input_field["name"])] = safestr(input_field["value"])
 
-		params["username"] = raw_input("Login: ")
+		params["username"] = input("Login: ")
 		params["password"] = getpass.getpass("Password: ")
 
 		r = requests.post(action, data=params)
@@ -76,11 +80,9 @@ def lastid():
 ##############################################################################
 
 def safestr(s):
-	if isinstance(s,str):
-		return s
-	elif isinstance(s,unicode):
-		return s.encode('ascii','replace')
-	else:
+	try:
+		return unicode(s)
+	except Exception:
 		return str(s)
 
 ##############################################################################

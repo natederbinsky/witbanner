@@ -33,7 +33,7 @@ def demo_comp1000emails(term, instructors=None):
 					print(" Grabbing e-mails")
 					for student in students:
 						emails.append(student["email"])
-	print(emails)
+	print(",".join(emails))
 	print(len(emails))
 
 ##############################################################################
