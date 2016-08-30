@@ -152,7 +152,7 @@ def _demo_search():
 	days = demo_facultyschedule(request.args["term"], request.args.getlist("profs"))
 	numprofs = len(request.args.getlist("profs"))
 	
-	day_names = days.keys()
+	day_names = list(days.keys())
 	slot_names = sorted(days[day_names[0]].keys())
 	
 	retval.append('<table border="1">')
