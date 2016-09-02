@@ -32,9 +32,8 @@ def demo_comp1000emails(term, instructors=None):
 				if students is not None:
 					print(" Grabbing e-mails")
 					for student in students:
-						emails.append(student["email"])
-	print(",".join(emails))
-	print(len(emails))
+						emails.append((student["email"] + " | " + student["email"].split("@")[0] + " | " + student["name_firstfirst"]))
+	print("\n".join(emails))
 
 ##############################################################################
 ##############################################################################
@@ -46,7 +45,7 @@ def main(argv):
 		banner.init()
 
 	demo_comp1000emails("201710")
-	demo_comp1000emails("201710",["Derbinsky, Nathaniel"])
+	# demo_comp1000emails("201710",["Derbinsky, Nathaniel"])
 
 	print(banner.lastid())
 
