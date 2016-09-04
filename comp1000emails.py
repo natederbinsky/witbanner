@@ -9,7 +9,7 @@ import sys
 ##############################################################################
 ##############################################################################
 
-def demo_comp1000emails(term, instructors=None):
+def demo_comp1000info(term, instructors=None):
 	codes = banner.sectioncodes(term)
 	schedules = {name:code for code,name in codes["schedules"].items()}
 
@@ -34,6 +34,27 @@ def demo_comp1000emails(term, instructors=None):
 					for student in students:
 						emails.append((student["email"] + " | " + student["email"].split("@")[0] + " | " + student["name_firstfirst"]))
 	print("\n".join(emails))
+	
+def demo_comp1000emails(term, instructor):
+	codes = banner.sectioncodes(term)
+	schedules = {name:code for code,name in codes["schedules"].items()}
+	profs = {name:code for code,name in codes["instructors"].items()}
+	
+	params = {"term":term, "subjects":["COMP"], "num":"1000", "schedules":[schedules['Lecture']], "instructors":[profs[instructor]]}
+	
+	banner.termset(term)
+	sections = banner.sectionsearch(**params)
+	if sections is not None:
+		for section in sections:
+			crn = section["crn"]
+			s = section["section"]
+			print("Section {} ({})".format(s, crn))
+			crn = banner.crnset(crn)
+			if crn is not None:
+				students = banner.summaryclasslist()
+				if students is not None:
+					for student in students:
+						print(student["email"])
 
 ##############################################################################
 ##############################################################################
@@ -44,9 +65,9 @@ def main(argv):
 	else:
 		banner.init()
 
-	demo_comp1000emails("201710")
-	# demo_comp1000emails("201710",["Derbinsky, Nathaniel"])
-
+	# demo_comp1000info("201710")
+	demo_comp1000emails("201710","Derbinsky, Nathaniel")
+	
 	print(banner.lastid())
 
 if __name__ == "__main__":
