@@ -5,10 +5,9 @@ from builtins import input
 
 from future.standard_library import install_aliases
 install_aliases()
-from urllib.parse import urlparse, urlencode, urljoin
+from urllib.parse import urlparse, urlencode, urljoin, parse_qs
 
 import requests
-import urllib
 
 from bs4 import BeautifulSoup
 
@@ -270,7 +269,7 @@ def _parse_adviseelisting(html):
 
 		info = {}
 		info["name_lastfirst"] = safestr(fields[0].span.a.string)
-		info["xyz"] = safestr(urlparse._parse_qs(urlparse.urlparse(fields[0].span.a["href"]).query)[u"xyz"][0])
+		info["xyz"] = safestr(parse_qs(urlparse(fields[0].span.a["href"]).query)[u"xyz"][0])
 		info["wid"] = safestr(fields[1].contents[0]).strip()
 		info["name_firstfirst"] = safestr(fields[1].a["target"])
 		info["email"] = safestr(fields[1].a["href"].split(":")[1])
