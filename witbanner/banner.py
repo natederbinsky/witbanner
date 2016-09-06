@@ -309,10 +309,38 @@ def _parse_choosexyz(html):
 		return retval
 
 def _parse_studentschedule(html):
-	retval = {}
-
-	# for now...
-	retval["raw"] = html
+	retval = []
+	soup = BeautifulSoup(html, "html.parser")
+	
+	datatables = soup.find_all("table", {"class":"datadisplaytable"})
+	count = 0
+	entry = None
+	for datatable in datatables:
+		count += 1
+		if count % 2:
+			entry = {"title":safestr(datatable.caption.string)}
+			
+			for row in datatable.find_all("tr"):
+				acr = row.th.find("acronym")
+				if acr:
+					k = safestr(row.th.acronym.string)
+				else:
+					k = safestr(row.th.string)[:-1]
+				
+				links = row.td.find_all("a")
+				if links:
+					v = [{"name":safestr(a["target"]), "email":safestr(a["href"].split(":")[1])} for a in links]
+				else:
+					v = safestr(row.td.string)
+				entry[k] = v
+		else:
+			meetings = []
+			for row in datatable.find_all("tr")[1:]:
+				cols = row.find_all("td")
+				if not cols[1].abbr:
+					meetings.append({"type":safestr(cols[5].string), "days":list(safestr(cols[2].string)), "times":safestr(cols[1].string).split(" - ")})
+			entry["meetings"] = meetings
+			retval.append(entry)
 
 	return retval
 
