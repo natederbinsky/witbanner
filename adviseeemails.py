@@ -8,7 +8,7 @@ import sys
 
 ##############################################################################
 ##############################################################################
-	
+
 def demo_adviseeemails(term):
 	banner.termset(term)
 	print(";".join([x["email"] for x in banner.adviseelisting()]))
@@ -17,13 +17,12 @@ def demo_adviseeemails(term):
 ##############################################################################
 
 def main(argv):
-	if len(argv) is 2:
-		banner.init(argv[1])
-	else:
-		banner.init()
+	sid=argv[1] if len(argv) is 2 else None
+	initialized = False
+	while not initialized:
+		initialized,sid = banner.init(sid=sid),None
 
 	demo_adviseeemails("201710")
-	
 	print(banner.lastid())
 
 if __name__ == "__main__":

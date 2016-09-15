@@ -38,7 +38,7 @@ def _get(endpoint, params={}):
 def _post(endpoint, params={}):
 	return _call(endpoint, "post", params)
 
-def init(sid=None):
+def init(sid=None, u=None, p=None):
 	global _SID
 
 	if sid is None:
@@ -58,18 +58,22 @@ def init(sid=None):
 		for input_field in f.find_all("input", {"type":"hidden"}):
 			params[safestr(input_field["name"])] = safestr(input_field["value"])
 
-		params["username"] = input("Login: ")
-		params["password"] = getpass.getpass("Password: ")
+		##
+
+		params["username"] = input("Login: ") if u is None else u
+		params["password"] = getpass.getpass("Password: ") if p is None else p
 
 		r = requests.post(action, data=params)
 		if "SESSID" in r.cookies:
-			sid = r.cookies["SESSID"]
-
-	if sid is None:
-		print("Initialization Error!")
-		sys.exit()
+			_SID = r.cookies["SESSID"]
+			return True
 	else:
 		_SID = sid
+		if mainmenu() is None:
+			_SID = None
+			return False
+		else:
+			return True
 
 def lastid():
 	global _SID
@@ -311,7 +315,7 @@ def _parse_choosexyz(html):
 def _parse_studentschedule(html):
 	retval = []
 	soup = BeautifulSoup(html, "html.parser")
-	
+
 	datatables = soup.find_all("table", {"class":"datadisplaytable"})
 	count = 0
 	entry = None
@@ -319,14 +323,14 @@ def _parse_studentschedule(html):
 		count += 1
 		if count % 2:
 			entry = {"title":safestr(datatable.caption.string)}
-			
+
 			for row in datatable.find_all("tr"):
 				acr = row.th.find("acronym")
 				if acr:
 					k = safestr(row.th.acronym.string)
 				else:
 					k = safestr(row.th.string)[:-1]
-				
+
 				links = row.td.find_all("a")
 				if links:
 					v = [{"name":safestr(a["target"]), "email":safestr(a["href"].split(":")[1])} for a in links]
