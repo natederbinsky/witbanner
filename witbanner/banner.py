@@ -348,6 +348,17 @@ def _parse_studentschedule(html):
 
 	return retval
 
+def _parse_studenttranscript(html):
+	retval = {}
+	soup = BeautifulSoup(html, "html.parser")
+	
+	maintable = soup.find("table", {"class":"datadisplaytable"})
+	
+	# for row in maintable.find_all("tr"):
+		
+	
+	return retval
+
 ##############################################################################
 ##############################################################################
 
@@ -609,5 +620,17 @@ def studentschedule():
 	good,r = _get("/SSBPROD/bwlkfstu.P_FacStuSchd")
 	if good:
 		return _parse_studentschedule(r.text)
+	else:
+		return None
+
+def studenttranscript():
+	params = {
+		"levl":"",
+		"tprt":"WEB",
+	}
+	
+	good,r = _post("/SSBPROD/bwlkftrn.P_ViewTran", params)
+	if good:
+		return _parse_studenttranscript(r.text)
 	else:
 		return None
