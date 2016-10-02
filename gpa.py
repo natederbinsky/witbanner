@@ -16,12 +16,15 @@ def main(argv):
 		initialized,sid = banner.init(sid=sid),None
 
 	term = "201710"
-	wid = "W00237397"
+	wid = "W00365715"
 	xyz = banner.getxyz_wid(term, wid)
 
 	banner.termset(term)
 	banner.idset(xyz)
-	print(banner.studenttranscript())
+	
+	transcript = banner.studenttranscript()
+	gpa = transcript["totals"]["overall"]["gpa"] if "overall" in transcript["totals"] else "unknown"
+	print("{}: {}".format(transcript["info"]["Name"][0], gpa))
 	
 	print(banner.lastid())
 

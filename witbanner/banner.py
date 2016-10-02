@@ -348,15 +348,243 @@ def _parse_studentschedule(html):
 
 	return retval
 
+# Student Information...
+# - "info": {
+#   - "Birth Date": [ "" ]
+#   - "College": [ "" ]
+#   - "Major and Department": [ "" ]
+#   - "Minor": [ "" ]
+#   - "Name": [ "" ]
+#   - "Program": [ "" ]
+#   - "Student Type": [ "" ]
+# }
+# 
+# Current Courses...
+# - "current": {
+#   - "term": ""
+#   - "courses": [
+#     - "course": ""
+#     - "credits": #
+#     - "level": ""
+#     - "subject": ""
+#     - "title": ""
+#   ]
+# }
+# 
+# Institutional Credit...
+# - "terms": [{
+#   - "Academic Standing": ""
+#   - "Major": ""
+#   - "Student Type": ""
+#   - "term": ""
+#   - "courses": [{
+#     - "course": ""
+#     - "credits": #
+#     - "grade": ""
+#     - "level": ""
+#     - "quality": #
+#     - "subject": ""
+#     - "title": ""
+#   }]
+#   - "cumulative"/"current": {
+#     - "gpa": #
+#     - "h_attempted": #
+#     - "h_earned": #
+#     - "h_gpa": #
+#     - "h_passed": #
+#     - "p_quality": #
+#   }
+# }]
+# 
+# Transfer Credit...
+# - "transfer": [{
+#   - "source": ""
+#   - "term": ""
+#   - "credits": [{
+#     "course": ""
+#     "credits": #
+#     "subject": ""
+#     "title": ""
+#   }]
+# }]
+# 
+# Totals...
+# - "totals": {
+#   - "inst"/"transfer"/"overall": {
+#     - "gpa": #
+#     - "h_attempted": #
+#     - "h_earned": #
+#     - "h_gpa": #
+#     - "h_passed": #
+#     - "p_quality": #
+#   }
+# }
 def _parse_studenttranscript(html):
-	retval = {}
+	retval = { 
+		"info": {}, 
+		"transfer":[], 
+		"terms":[], 
+		"totals":{}, 
+		"current": { 
+			"courses":[], 
+		} 
+	}
 	soup = BeautifulSoup(html, "html.parser")
 	
 	maintable = soup.find("table", {"class":"datadisplaytable"})
 	
-	# for row in maintable.find_all("tr"):
-		
+	STUD_INFO = (0,1,2,)
+	TRANSFER = "TRANSFER CREDIT ACCEPTED BY INSTITUTION"
+	INST = "INSTITUTION CREDIT"
+	TERM_TOTAL = "Term Totals (Undergraduate)"
+	INST_TOTAL = "TRANSCRIPT TOTALS (UNDERGRADUATE)"
+	PROGRESS = "COURSES IN PROGRESS"
 	
+	phase = 0
+	stuff = None
+	for row in maintable.find_all("tr"):
+		if row.find("th", {"class":"ddtitle",}):
+			if phase in STUD_INFO:	
+				phase += 1
+			
+			if phase not in STUD_INFO:
+				phase = row.find("th", {"class":"ddtitle",}).find(text=True, recursive=False).strip()
+
+		if phase in STUD_INFO:
+			title = row.find("th", {"class":"ddlabel"})
+			if title:
+				value = row.find("td", {"class":"dddefault"})
+				if value:
+					key = safestr(title.text[:title.text.find(":")].strip())
+					value = safestr(value.text)
+					if key in retval["info"]:
+						retval["info"][key].append(value)
+					else:
+						retval["info"][key] = [value]
+		
+		if phase == TRANSFER:
+			th = row.find_all("th")
+			td = row.find_all("td")
+			
+			if len(th) is 1 and len(td) is 1:
+				stuff = []
+				retval["transfer"].append({
+					"source":safestr(td[0].text),
+					"term":safestr(th[0].text[:th[0].text.find(":")]),
+					"credits":stuff
+				})
+			elif len(th) is 0 and len(td) is 7:
+				subj = safestr(td[0].text)
+				course = safestr(td[1].text)
+				t = safestr(td[2].text)
+				credits = float(td[4].text)
+				stuff.append({
+					"subject":subj,
+					"course":course,
+					"title":t,
+					"credits":credits,
+				})
+				
+		if phase == INST:
+			th = row.find_all("th")
+			td = row.find_all("td")
+			
+			if row.find("span", {"class":"fieldOrangetextbold",}):
+				stuff = {
+					"term":safestr(row.text[row.text.find(":")+1:].strip()),
+					"courses":[],
+				}
+				retval["terms"].append(stuff)
+			elif len(th) is 1 and len(td) is 1:
+				key = safestr(th[0].text.strip())
+				val = safestr(td[0].text.strip())
+				stuff[key] = val
+			elif len(th) is 0 and len(td) is 10:
+				subj = safestr(td[0].text)
+				course = safestr(td[1].text)
+				level = safestr(td[2].text)
+				t = safestr(td[3].text)
+				grade = safestr(td[4].text)
+				credits = float(td[5].text)
+				quality = float(td[6].text)
+				stuff["courses"].append({
+					"subject":subj,
+					"course":course,
+					"level":level,
+					"title":t,
+					"grade":grade,
+					"credits":credits,
+					"quality":quality,
+				})
+				
+		if phase == TERM_TOTAL:
+			if row.find("td", {"class":"ddseparator"}):
+				phase = INST
+			else:
+				th = row.find_all("th")
+				td = row.find_all("td")
+				
+				if len(th) is 1 and len(td) is 6:
+					result_type = th[0].text
+					if result_type == "Current Term:":
+						result_type = "current"
+					else:
+						result_type = "cumulative"
+						
+					stuff[result_type] = {
+						"h_attempted":float(td[0].text.strip()),
+						"h_passed":float(td[1].text.strip()),
+						"h_earned":float(td[2].text.strip()),
+						"h_gpa":float(td[3].text.strip()),
+						"p_quality":float(td[4].text.strip()),
+						"gpa":float(td[5].text.strip()),
+					}
+					
+		if phase == INST_TOTAL:
+			th = row.find_all("th")
+			td = row.find_all("td")
+			
+			if len(th) is 1 and len(td) is 6:
+				result_type = th[0].text
+				
+				if result_type == "Total Institution:":
+					result_type = "inst"
+				elif result_type == "Total Transfer:":
+					result_type = "transfer"
+				else:
+					result_type = "overall"
+					
+				retval["totals"][result_type] = {
+					"h_attempted":float(td[0].p.text.strip()),
+					"h_passed":float(td[1].p.text.strip()),
+					"h_earned":float(td[2].p.text.strip()),
+					"h_gpa":float(td[3].p.text.strip()),
+					"p_quality":float(td[4].p.text.strip()),
+					"gpa":float(td[5].p.text.strip()),
+				}
+				
+		if phase == PROGRESS:
+			th = row.find_all("th")
+			td = row.find_all("td")
+			
+			if row.find("span", {"class":"fieldOrangetextbold",}):
+				retval["current"]["term"] = safestr(row.text[row.text.find(":")+1:].strip())
+				
+			if len(th) is 0 and len(td) is 5:
+				subj = safestr(td[0].text)
+				course = safestr(td[1].text)
+				level = safestr(td[2].text)
+				t = safestr(td[3].text)
+				credits = float(td[4].text)
+				
+				retval["current"]["courses"].append({
+					"subject":subj,
+					"course":course,
+					"level":level,
+					"title":t,
+					"credits":credits,
+				})
+			
 	return retval
 
 ##############################################################################
