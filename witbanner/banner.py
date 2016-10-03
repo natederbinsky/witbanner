@@ -358,7 +358,7 @@ def _parse_studentschedule(html):
 #   - "Program": [ "" ]
 #   - "Student Type": [ "" ]
 # }
-# 
+#
 # Current Courses...
 # - "current": {
 #   - "term": ""
@@ -370,7 +370,7 @@ def _parse_studentschedule(html):
 #     - "title": ""
 #   ]
 # }
-# 
+#
 # Institutional Credit...
 # - "terms": [{
 #   - "Academic Standing": ""
@@ -395,7 +395,7 @@ def _parse_studentschedule(html):
 #     - "p_quality": #
 #   }
 # }]
-# 
+#
 # Transfer Credit...
 # - "transfer": [{
 #   - "source": ""
@@ -407,7 +407,7 @@ def _parse_studentschedule(html):
 #     "title": ""
 #   }]
 # }]
-# 
+#
 # Totals...
 # - "totals": {
 #   - "inst"/"transfer"/"overall": {
@@ -420,33 +420,33 @@ def _parse_studentschedule(html):
 #   }
 # }
 def _parse_studenttranscript(html):
-	retval = { 
-		"info": {}, 
-		"transfer":[], 
-		"terms":[], 
-		"totals":{}, 
-		"current": { 
-			"courses":[], 
-		} 
+	retval = {
+		"info": {},
+		"transfer":[],
+		"terms":[],
+		"totals":{},
+		"current": {
+			"courses":[],
+		}
 	}
 	soup = BeautifulSoup(html, "html.parser")
-	
+
 	maintable = soup.find("table", {"class":"datadisplaytable"})
-	
+
 	STUD_INFO = (0,1,2,)
 	TRANSFER = "TRANSFER CREDIT ACCEPTED BY INSTITUTION"
 	INST = "INSTITUTION CREDIT"
 	TERM_TOTAL = "Term Totals (Undergraduate)"
 	INST_TOTAL = "TRANSCRIPT TOTALS (UNDERGRADUATE)"
 	PROGRESS = "COURSES IN PROGRESS"
-	
+
 	phase = 0
 	stuff = None
 	for row in maintable.find_all("tr"):
 		if row.find("th", {"class":"ddtitle",}):
-			if phase in STUD_INFO:	
+			if phase in STUD_INFO:
 				phase += 1
-			
+
 			if phase not in STUD_INFO:
 				phase = row.find("th", {"class":"ddtitle",}).find(text=True, recursive=False).strip()
 
@@ -461,11 +461,11 @@ def _parse_studenttranscript(html):
 						retval["info"][key].append(value)
 					else:
 						retval["info"][key] = [value]
-		
+
 		if phase == TRANSFER:
 			th = row.find_all("th")
 			td = row.find_all("td")
-			
+
 			if len(th) is 1 and len(td) is 1:
 				stuff = []
 				retval["transfer"].append({
@@ -484,11 +484,11 @@ def _parse_studenttranscript(html):
 					"title":t,
 					"credits":credits,
 				})
-				
+
 		if phase == INST:
 			th = row.find_all("th")
 			td = row.find_all("td")
-			
+
 			if row.find("span", {"class":"fieldOrangetextbold",}):
 				stuff = {
 					"term":safestr(row.text[row.text.find(":")+1:].strip()),
@@ -516,21 +516,21 @@ def _parse_studenttranscript(html):
 					"credits":credits,
 					"quality":quality,
 				})
-				
+
 		if phase == TERM_TOTAL:
 			if row.find("td", {"class":"ddseparator"}):
 				phase = INST
 			else:
 				th = row.find_all("th")
 				td = row.find_all("td")
-				
+
 				if len(th) is 1 and len(td) is 6:
 					result_type = th[0].text
 					if result_type == "Current Term:":
 						result_type = "current"
 					else:
 						result_type = "cumulative"
-						
+
 					stuff[result_type] = {
 						"h_attempted":float(td[0].text.strip()),
 						"h_passed":float(td[1].text.strip()),
@@ -539,21 +539,21 @@ def _parse_studenttranscript(html):
 						"p_quality":float(td[4].text.strip()),
 						"gpa":float(td[5].text.strip()),
 					}
-					
+
 		if phase == INST_TOTAL:
 			th = row.find_all("th")
 			td = row.find_all("td")
-			
+
 			if len(th) is 1 and len(td) is 6:
 				result_type = th[0].text
-				
+
 				if result_type == "Total Institution:":
 					result_type = "inst"
 				elif result_type == "Total Transfer:":
 					result_type = "transfer"
 				else:
 					result_type = "overall"
-					
+
 				retval["totals"][result_type] = {
 					"h_attempted":float(td[0].p.text.strip()),
 					"h_passed":float(td[1].p.text.strip()),
@@ -562,21 +562,21 @@ def _parse_studenttranscript(html):
 					"p_quality":float(td[4].p.text.strip()),
 					"gpa":float(td[5].p.text.strip()),
 				}
-				
+
 		if phase == PROGRESS:
 			th = row.find_all("th")
 			td = row.find_all("td")
-			
+
 			if row.find("span", {"class":"fieldOrangetextbold",}):
 				retval["current"]["term"] = safestr(row.text[row.text.find(":")+1:].strip())
-				
+
 			if len(th) is 0 and len(td) is 5:
 				subj = safestr(td[0].text)
 				course = safestr(td[1].text)
 				level = safestr(td[2].text)
 				t = safestr(td[3].text)
 				credits = float(td[4].text)
-				
+
 				retval["current"]["courses"].append({
 					"subject":subj,
 					"course":course,
@@ -584,7 +584,26 @@ def _parse_studenttranscript(html):
 					"title":t,
 					"credits":credits,
 				})
-			
+
+	return retval
+
+def _parse_studenttestscore(html):
+	retval = {}
+	soup = BeautifulSoup(html, "html.parser")
+
+	maintable = soup.find("table", {"class":"datadisplaytable"})
+	if maintable:
+		rows = maintable.find_all("tr")[1:]
+		for row in rows:
+			cols = row.find_all("td")
+			testname = safestr(cols[0].text)
+			testscore = safestr(cols[1].text)
+			testdate = safestr(cols[2].text)
+
+			if testname not in retval:
+				retval[testname] = []
+			retval[testname].append((testscore, testdate,))				
+
 	return retval
 
 ##############################################################################
@@ -856,9 +875,16 @@ def studenttranscript():
 		"levl":"",
 		"tprt":"WEB",
 	}
-	
+
 	good,r = _post("/SSBPROD/bwlkftrn.P_ViewTran", params)
 	if good:
 		return _parse_studenttranscript(r.text)
+	else:
+		return None
+
+def studenttestscores():
+	good,r = _get("/SSBPROD/bwlktest.P_FacDispTest")
+	if good:
+		return _parse_studenttestscore(r.text)
 	else:
 		return None
