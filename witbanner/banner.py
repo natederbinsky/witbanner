@@ -401,10 +401,10 @@ def _parse_studentschedule(html):
 #   - "source": ""
 #   - "term": ""
 #   - "credits": [{
-#     "course": ""
-#     "credits": #
-#     "subject": ""
-#     "title": ""
+#     - "course": ""
+#     - "credits": #
+#     - "subject": ""
+#     - "title": ""
 #   }]
 # }]
 #
