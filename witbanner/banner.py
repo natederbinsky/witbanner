@@ -146,9 +146,9 @@ def _parse_summaryclasslist(html):
 
 		info["wid"] = safestr(fields[2].span.string)
 		info["name_lastfirst"] = safestr(fields[1].span.a.string)
-		info["name_firstfirst"] = safestr(fields[9].span.a["target"])
-		info["email"] = safestr(fields[9].span.a["href"].split(":")[1])
-		info["img"] = safestr(fields[10].img["src"])
+		info["name_firstfirst"] = safestr(fields[-2].span.a["target"])
+		info["email"] = safestr(fields[-2].span.a["href"].split(":")[1])
+		info["img"] = safestr(fields[-1].img["src"])
 
 		retval.append(info)
 
