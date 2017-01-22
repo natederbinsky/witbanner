@@ -317,34 +317,37 @@ def _parse_studentschedule(html):
 	soup = BeautifulSoup(html, "html.parser")
 
 	datatables = soup.find_all("table", {"class":"datadisplaytable"})
-	count = 0
 	entry = None
 	for datatable in datatables:
-		count += 1
-		if count % 2:
-			entry = {"title":safestr(datatable.caption.string)}
+		if datatable.has_attr("summary"):
+			if "schedule course detail" in datatable["summary"]:
+				if entry is not None and "meetings" not in entry:
+					entry["meetings"] = []
+					retval.append(entry)
+				
+				entry = {"title":safestr(datatable.caption.string)}
 
-			for row in datatable.find_all("tr"):
-				acr = row.th.find("acronym")
-				if acr:
-					k = safestr(row.th.acronym.string)
-				else:
-					k = safestr(row.th.string)[:-1]
+				for row in datatable.find_all("tr"):
+					acr = row.th.find("acronym")
+					if acr:
+						k = safestr(row.th.acronym.string)
+					else:
+						k = safestr(row.th.string)[:-1]
 
-				links = row.td.find_all("a")
-				if links:
-					v = [{"name":safestr(a["target"]), "email":safestr(a["href"].split(":")[1])} for a in links]
-				else:
-					v = safestr(row.td.string)
-				entry[k] = v
-		else:
-			meetings = []
-			for row in datatable.find_all("tr")[1:]:
-				cols = row.find_all("td")
-				if not cols[1].abbr:
-					meetings.append({"type":safestr(cols[5].string), "days":list(safestr(cols[2].string)), "times":safestr(cols[1].string).split(" - ")})
-			entry["meetings"] = meetings
-			retval.append(entry)
+					links = row.td.find_all("a")
+					if links:
+						v = [{"name":safestr(a["target"]), "email":safestr(a["href"].split(":")[1])} for a in links]
+					else:
+						v = safestr(row.td.string).strip()
+					entry[k] = v
+			elif "scheduled meeting times" in datatable["summary"]:
+				meetings = []
+				for row in datatable.find_all("tr")[1:]:
+					cols = row.find_all("td")
+					if not cols[1].abbr:
+						meetings.append({"type":safestr(cols[5].string), "days":list(safestr(cols[2].string)), "times":safestr(cols[1].string).split(" - ")})
+				entry["meetings"] = meetings
+				retval.append(entry)
 
 	return retval
 
