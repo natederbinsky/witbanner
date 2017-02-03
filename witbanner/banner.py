@@ -17,6 +17,7 @@ import getpass
 ##############################################################################
 
 _BASE_URL = "https://prodweb2.wit.edu"
+requests.packages.urllib3.util.ssl_.DEFAULT_CIPHERS = 'ALL'
 _SID = None
 
 def _call(endpoint, method, params):
