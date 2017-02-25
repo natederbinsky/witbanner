@@ -146,7 +146,12 @@ def _parse_summaryclasslist(html):
 		fields = student.find_all("td")
 
 		info["wid"] = safestr(fields[2].span.string)
-		info["name_lastfirst"] = safestr(fields[1].span.a.string)
+		if (fields[1].span.find("a") is None):
+			info["deceased"] = True
+			info["name_lastfirst"] = safestr(fields[1].span.contents[0].strip())
+		else:
+			info["deceased"] = False
+			info["name_lastfirst"] = safestr(fields[1].span.a.string)
 		info["name_firstfirst"] = safestr(fields[-2].span.a["target"])
 		info["email"] = safestr(fields[-2].span.a["href"].split(":")[1])
 		info["img"] = safestr(fields[-1].img["src"])
@@ -168,7 +173,12 @@ def _parse_detailclasslist(html):
 		if rowstate is 1:
 			fields = row.find_all("td")
 			info["wid"] = safestr(fields[2].string)
-			info["name_lastfirst"] = safestr(fields[1].a.string)
+			if (fields[1].find("a") is None):
+				info["deceased"] = True
+				info["name_lastfirst"] = safestr(fields[1].contents[0].strip())
+			else:
+				info["deceased"] = False
+				info["name_lastfirst"] = safestr(fields[1].a.string)
 			info["email"] = safestr(fields[5].span.a["href"].split(":")[1])
 			rowstate+=1
 			continue
