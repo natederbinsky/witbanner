@@ -93,12 +93,14 @@ def safestr(s):
 ##############################################################################
 
 # necessary hack because banner doesn't properly close tags
-def _getstring(tag):
-	firstline = safestr(tag).splitlines()[0]
-	return firstline[firstline.find(">")+1:].strip()
+# seems to have been fixed!
+# def _getstring(tag):
+# 	firstline = safestr(tag).splitlines()[0]
+# 	return firstline[firstline.find(">")+1:].strip()
 
 def _parse_select(select):
-	return {safestr(option["value"]):_getstring(option) for option in select.find_all("option")}
+	# return {safestr(option["value"]):_getstring(option) for option in select.find_all("option")}
+	return {safestr(option["value"]):safestr(option.string).strip() for option in select.find_all("option")}
 
 ##############################################################################
 ##############################################################################
